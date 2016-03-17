@@ -13,24 +13,25 @@ import scala.reflect.ClassTag
 /**
   * Created by BrianZ on 3/7/16.
   */
-class VariationAssignmentSpec extends PlaySpecification with Mockito {
+class VariationAssignmentSpec(implicit ee: ExecutionEnv) extends PlaySpecification with Mockito {
 
   case class Variation(id: Option[Long] = None)
 
-  val v1 = Variation(Option(1L))
-  val v2 = Variation(Option(2L))
+  lazy val v1 = Variation(Option(1L))
+  lazy val v2 = Variation(Option(2L))
 
   "Cache#getOrElse" should {
-    "return correct result" in { implicit ee: ExecutionEnv =>
+    "return correct result" in {
 
       val mockCache = mock[CacheApi]
-      val classTag = implicitly[ClassTag[Future[Seq[Variation]]]]
 
-      mockCache.getOrElse[Future[Seq[Variation]]](anyString,anyObject[Duration])(any[Future[Seq[Variation]]])(===(classTag)) returns Future(Seq(v1,v2))
+      mockCache.getOrElse[Future[Seq[Variation]]](anyString, any[Duration])(any)(any) returns
+        Future(Seq(v1, v2))
 
-      val resultFuture = mockCache.getOrElse[Future[Seq[Variation]]]("cache.key", 10.seconds)(Future(Seq(v1,v2)))
+      val resultFuture: Future[Seq[Variation]] =
+        mockCache.getOrElse("cache.key", 10.seconds)(Future(Seq(v1,v2)))
 
-      resultFuture must equalTo(Future(Seq(v1,v2)))
+      resultFuture must equalTo(Seq(v1,v2)).await
     }
   }
 
